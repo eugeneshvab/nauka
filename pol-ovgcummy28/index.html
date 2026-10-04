@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%90%BB%3C/text%3E%3C/svg%3E">
 <title>Głoski, litery i alfabet</title>
 <style>
 /* Kids template v1 (Ogarnio). Tokens come from theme_ogarnio.KIDS_CSS (fallbacks here). */
@@ -421,6 +422,7 @@ function parentScreen(){var P=C.parent;show('Dla rodzica',function(s){var c=el('
  c.appendChild(el('ul',null,C.tests.map(function(T){var r=last[T.id];return el('li',null,T.title+': '+(r?r.pct+'% '+starRow(r.stars)+' ('+new Date(r.at).toLocaleDateString('pl-PL')+')':'jeszcze nie'));})));
  s.appendChild(c);s.appendChild(el('div',{class:'actions'},[el('button',{class:'btn sun',onclick:function(){buildPrint();window.print();}},'🖨️ Drukuj kartę ćwiczeń')]));});
  say([C.ui.parent]);}
+function plf(n,a,b,c){var t=n%10,h=n%100;return n===1?a:(t>=2&&t<=4&&(h<12||h>14))?b:c;}
 function buildPrint(){var P=C.parent,S=P.sheet,K=P.key,h='';
  h+='<div class="pg"><h1>'+M.title+' – ściąga</h1><p>'+P.intro+'</p><ul>'+P.rules.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul><h2>Alfabet (32 litery)</h2><p style="font-size:15pt;letter-spacing:2px">'+C.alphabet.letters.map(function(x){return x.v?'<b style="color:#C0392B">'+x.l+'</b>':'<span style="color:#2C6AA8">'+x.l+'</span>';}).join(' ')+'</p><h2>Jak ćwiczyć</h2><ul>'+P.tips.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul></div>';
  h+='<div class="pg"><h1>Karta ćwiczeń: '+M.testName+'</h1><p>Imię: <span class="ln" style="min-width:60mm"></span> Data: <span class="ln"></span></p>';
@@ -430,7 +432,7 @@ function buildPrint(){var P=C.parent,S=P.sheet,K=P.key,h='';
  h+='<h2>4. Samogłoski pokoloruj na czerwono, spółgłoski na niebiesko.</h2><p>'+S.vow.split('').map(function(l){return '<span class="pl">'+l+'</span>';}).join('')+'</p>';
  h+='<h2>5. Wpisz brakującą literę.</h2><p style="font-size:16pt">'+S.gap.map(function(g){return g.map(function(x){return x==='_'?'<span class="ln" style="min-width:10mm"></span>':x;}).join(' ');}).join(' &nbsp; | &nbsp; ')+'</p>';
  h+='<h2>6. Uzupełnij.</h2><p>Polski alfabet ma <span class="ln" style="min-width:12mm"></span> liter. Samogłosek jest <span class="ln" style="min-width:12mm"></span>. Głoskę <span class="ln"></span>, a literę <span class="ln"></span> i <span class="ln"></span>.</p></div>';
- h+='<div class="pg"><h1>Odpowiedzi (dla rodzica)</h1><p>1. '+K.syl.map(function(x){return x[0]+' – '+x[1];}).join(', ')+'</p><p>2. '+K.cnt.map(function(x){return x[0]+' – '+x[1]+' liter, '+x[2]+' głosek';}).join('; ')+'</p><p>3. '+K.ord.map(function(o){return o.join(', ');}).join(' | ')+'</p><p>4. samogłoski: '+K.vow.join(', ')+' (reszta – spółgłoski)</p><p>5. '+K.gap.join(', ')+'</p><p>6. 32; 9; słyszymy (i wymawiamy); widzimy i piszemy.</p></div>';
+ h+='<div class="pg"><h1>Odpowiedzi (dla rodzica)</h1><p>1. '+K.syl.map(function(x){return x[0]+' – '+x[1];}).join(', ')+'</p><p>2. '+K.cnt.map(function(x){return x[0]+' – '+x[1]+' '+plf(x[1],'litera','litery','liter')+', '+x[2]+' '+plf(x[2],'głoska','głoski','głosek');}).join('; ')+'</p><p>3. '+K.ord.map(function(o){return o.join(', ');}).join(' | ')+'</p><p>4. samogłoski: '+K.vow.join(', ')+' (reszta – spółgłoski)</p><p>5. '+K.gap.join(', ')+'</p><p>6. 32; 9; słyszymy (i wymawiamy); widzimy i piszemy.</p></div>';
  $('#print').innerHTML=h;}
 window.addEventListener('beforeprint',buildPrint);
 /* ---------- start (unlocks audio) ---------- */
