@@ -424,7 +424,7 @@ S.slabe=function(sec){var W=C.weakSpots;if(!W)return;
  var t=el('div',{class:'card weaktest',id:'w-test'});var ML=mockList(),mi=-1;ML.forEach(function(T2,i){if(T2.id===W.mock)mi=i;});var T=ML[mi]||{tasks:[]};var LR=mi>=0?mockGet(mi):null;
  t.innerHTML='<h2>📝 4. Sprawdzian słabych punktów</h2><p>'+T.tasks.length+' zadań, '+T.minutes+' min, tylko z tego, co ostatnio nie wyszło. Wynik zapisze się u rodzica'+(LR?' · ostatnio <b>'+LR.pct+'% ('+esc(LR.grade)+')</b>':'')+'.</p>';
  t.appendChild(el('button',{class:'btn',onclick:function(){P.mockSel=mi;save();go('mock');}},'Start sprawdzianu słabych punktów ⏱️'));
- if(window.TP_VOICEQUIZ&&TP_VOICEQUIZ.weak)t.appendChild(el('button',{class:'btn sec',onclick:function(){TP_VOICEQUIZ.open({weak:true});}},'🎙️ Quiz głosowy – słabe punkty'));
+ if((window.TP_VOICEQUIZ&&TP_VOICEQUIZ.weak)||(C.weakSpots.voice||[]).length)t.appendChild(el('button',{class:'btn sec',onclick:function(){if(window.TP_VOICEQUIZ&&TP_VOICEQUIZ.weak)TP_VOICEQUIZ.open({weak:true});else alert('Quiz głosowy jeszcze się ładuje – spróbuj za chwilę.');}},'🎙️ Quiz głosowy – słabe punkty'));
  sec.appendChild(t);};
 function dmTrainer(box){var N=15,DMV={N:'N',S:'S',E:'E',W:'W'};
  function R(a,b){return a+Math.floor(Math.random()*(b-a+1));}function pick(a){return a[Math.floor(Math.random()*a.length)];}
