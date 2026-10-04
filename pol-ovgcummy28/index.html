@@ -157,7 +157,9 @@ h2{font-size:1.5rem;margin:6px 0 12px;letter-spacing:-.02em}h3{margin:0 0 8px;fo
 .basket.v{background:var(--k-vow-pale);border:4px solid var(--k-vow)}.basket.c{background:var(--k-con-pale);border:4px solid var(--k-con)}
 .basket.over{transform:scale(1.03)}.basket h4{margin:0;font-size:1.05rem}.basket .in{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .basket .in .L{min-width:48px;height:54px;font-size:1.6rem}
-.dragging{position:fixed;z-index:99;pointer-events:none;transform:translate(-50%,-50%) scale(1.1);opacity:.95}
+.dragging{position:fixed!important;z-index:99;pointer-events:none;margin:0!important;transform:scale(1.08);opacity:.97;box-shadow:0 10px 24px rgba(0,0,0,.18)!important;transition:none}
+.L,.wc{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;cursor:grab}
+.L.sel{outline:4px solid var(--k-sun);transform:translateY(-4px)}.baskets.armed .basket{box-shadow:0 0 0 5px var(--k-sun-pale);cursor:pointer}
 .ghosted{opacity:.3}
 .shake{animation:shake .4s}@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 .seq{display:flex;gap:10px;justify-content:center;margin:10px 0 18px;flex-wrap:wrap}.seq .L.gap{background:var(--k-sun-pale);color:var(--k-sun);outline:3px dashed var(--k-sun)}
@@ -362,14 +364,35 @@ function alphabetScreen(){var colors=false,board;show('Alfabet',function(s){var 
  function sing(){var T=C.alphabet.song.times||[];hush();setBubble('🎵 a, ą, b, c, ć…');if(muted){mood('cheer');return;}
   var a=voice;a.src=src('alfabet');talk(true);a.play().catch(function(){});var tick=setInterval(function(){var t=a.currentTime,cur=-1;for(var i=0;i<T.length;i++)if(t>=T[i][0]-.05)cur=i;
    [].forEach.call(board.children,function(b,i){b.classList.toggle('hl',i===cur);});if(a.paused||a.ended||!document.body.contains(board)){clearInterval(tick);talk(false);[].forEach.call(board.children,function(b){b.classList.remove('hl');});if(a.ended){mood('cheer');play('star');}}},80);}}
-/* ---------- drag & tap helper ---------- */
-function dnd(item,onTap,onDrop){var sx,sy,drag=null,moved=false;
- item.addEventListener('pointerdown',function(e){if(e.button>0)return;sx=e.clientX;sy=e.clientY;moved=false;try{item.setPointerCapture&&item.setPointerCapture(e.pointerId);}catch(x){}});
- item.addEventListener('pointermove',function(e){if(sx===undefined)return;if(!drag&&Math.hypot(e.clientX-sx,e.clientY-sy)>10){moved=true;drag=item.cloneNode(true);drag.classList.add('dragging');document.body.appendChild(drag);item.classList.add('ghosted');}
-  if(drag){drag.style.left=e.clientX+'px';drag.style.top=e.clientY+'px';var z=zoneAt(e.clientX,e.clientY);document.querySelectorAll('.over').forEach(function(o){if(o!==z)o.classList.remove('over');});if(z)z.classList.add('over');}});
- function end(e){if(sx===undefined)return;var was=drag;sx=undefined;if(was){var z=zoneAt(e.clientX,e.clientY);was.remove();drag=null;item.classList.remove('ghosted');document.querySelectorAll('.over').forEach(function(o){o.classList.remove('over');});if(z)onDrop(z);}else if(!moved&&e.type==='pointerup')onTap();}
- item.addEventListener('pointerup',end);item.addEventListener('pointercancel',end);}
-function zoneAt(x,y){var e=document.elementFromPoint(x,y);return e&&e.closest('[data-drop]');}
+/* ---------- drag & tap helper (Pointer Events; mouse + touch + pen) ----------
+ dnd(item,onTap,onDrop): drag a floating copy; on release the drop zone under the copy's CENTRE gets onDrop(zone).
+ onDrop returns false to reject -> the copy flies back to the source and the item shakes. Outside any zone -> flies back.
+ A short press without movement = onTap(). Only one drag at a time (multi-touch safe); pointercancel/lostcapture = clean abort. */
+var DND=null;
+function dndClear(){document.querySelectorAll('.over').forEach(function(o){o.classList.remove('over');});}
+function dnd(item,onTap,onDrop){item.style.touchAction='none';item.setAttribute('draggable','false');
+ function cleanup(){var d=DND;DND=null;dndClear();if(d&&d.clone&&d.clone.parentNode)d.clone.remove();item.classList.remove('ghosted');}
+ function flyBack(d,then){var r=item.getBoundingClientRect(),c=d.clone;c.style.transition='left .22s cubic-bezier(.3,.7,.4,1),top .22s cubic-bezier(.3,.7,.4,1),transform .22s';
+  c.style.left=r.left+'px';c.style.top=r.top+'px';c.style.transform='scale(1)';setTimeout(function(){if(c.parentNode)c.remove();item.classList.remove('ghosted');if(then)then();},230);}
+ item.addEventListener('pointerdown',function(e){if(e.button>0||DND)return;if(e.pointerType!=='mouse')e.preventDefault();var r=item.getBoundingClientRect();
+  DND={item:item,id:e.pointerId,sx:e.clientX,sy:e.clientY,ox:e.clientX-r.left,oy:e.clientY-r.top,w:r.width,h:r.height,clone:null};
+  try{item.setPointerCapture(e.pointerId);}catch(x){}});
+ item.addEventListener('pointermove',function(e){var d=DND;if(!d||d.item!==item||e.pointerId!==d.id)return;
+  if(!d.clone){if(Math.hypot(e.clientX-d.sx,e.clientY-d.sy)<8)return;var c=item.cloneNode(true);c.classList.remove('sel','shake');c.classList.add('dragging');
+   c.style.width=d.w+'px';c.style.height=d.h+'px';document.body.appendChild(c);d.clone=c;item.classList.add('ghosted');}
+  e.preventDefault();var x=e.clientX-d.ox,y=e.clientY-d.oy;d.clone.style.left=x+'px';d.clone.style.top=y+'px';
+  var z=zoneAt(x+d.w/2,y+d.h/2);document.querySelectorAll('.over').forEach(function(o){if(o!==z)o.classList.remove('over');});if(z)z.classList.add('over');});
+ item.addEventListener('pointerup',function(e){var d=DND;if(!d||d.item!==item||e.pointerId!==d.id)return;try{item.releasePointerCapture(e.pointerId);}catch(x){}
+  if(!d.clone){DND=null;onTap();return;}
+  var r=d.clone.getBoundingClientRect(),z=zoneAt(r.left+r.width/2,r.top+r.height/2);DND=null;dndClear();
+  var ok=z?onDrop(z)!==false:false;
+  if(ok&&item.isConnected){d.clone.remove();item.classList.remove('ghosted');}
+  else flyBack(d,z?function(){item.classList.add('shake');setTimeout(function(){item.classList.remove('shake');},450);}:null);});
+ function abort(e){var d=DND;if(!d||d.item!==item||(e.pointerId!==undefined&&e.pointerId!==d.id))return;DND=null;dndClear();if(d.clone)flyBack(d);}
+ item.addEventListener('pointercancel',abort);item.addEventListener('lostpointercapture',function(e){setTimeout(function(){abort(e);},0);});
+ item.addEventListener('dragstart',function(e){e.preventDefault();});}
+function zoneAt(x,y){var e=document.elementFromPoint(x,y),z=e&&e.closest('[data-drop]');if(z)return z;
+ var all=document.querySelectorAll('[data-drop]');for(var i=0;i<all.length;i++){var r=all[i].getBoundingClientRect();if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return all[i];}return null;}
 /* ---------- exercises: each returns {node, focus()} and calls done(res) ; res={pts,max,a,c,q} ---------- */
 function W(w){return w;}
 function wordHead(wd){var h=el('div',{class:'center'});if(wd.e)h.appendChild(el('div',{class:'emoji'},wd.e));var r=el('div',{class:'row'});r.appendChild(el('div',{class:'word'},wd.t));r.appendChild(el('button',{class:'say',onclick:function(){say([wd.a]);}},'🔊'));h.appendChild(r);return h;}
@@ -394,7 +417,7 @@ var EX={
   var cards=shuffle(it.words);while(cards.map(function(w){return w.t;}).join()===it.answer.join())cards=shuffle(it.words);
   it.words.forEach(function(_,i){var s=el('div',{class:'slot','data-drop':'s','data-n':i+1});s._i=i;slots.appendChild(s);placed.push(null);});
   function card(w){var c=el('div',{class:'wc'},'<span class="e">'+(w.e||'')+'</span>'+w.t);c._w=w;
-   dnd(c,function(){if(c.parentNode===pool){var k=placed.indexOf(null);if(k>=0)put(c,k);}else back(c);say([w.a],w.t);},function(z){if(z.dataset.drop==='s')put(c,z._i);else if(z===pool)back(c);});return c;}
+   dnd(c,function(){if(c.parentNode===pool){var k=placed.indexOf(null);if(k>=0)put(c,k);}else back(c);say([w.a],w.t);},function(z){if(z.dataset.drop==='s'){put(c,z._i);return true;}if(z===pool){back(c);return true;}return false;});return c;}
   function put(c,k){if(placed[k]&&placed[k]!==c){back(placed[k]);}var old=placed.indexOf(c);if(old>=0)placed[old]=null;placed[k]=c;slots.children[k].appendChild(c);upd();}
   function back(c){var old=placed.indexOf(c);if(old>=0)placed[old]=null;pool.appendChild(c);upd();}
   function upd(){go.disabled=placed.indexOf(null)>=0;}
@@ -406,15 +429,20 @@ var EX={
      setTimeout(function(){it.answer.forEach(function(t,k){var c=[].filter.call(n.querySelectorAll('.wc'),function(x){return x._w.t===t;})[0];slots.children[k].appendChild(c);placed[k]=c;slots.children[k].className='slot ok';});},right?0:1100);},
     function(){placed.forEach(function(c,k){slots.children[k].classList.remove('ok','no');});});}},mode==='test'?'Dalej ▶':'Sprawdź ✔');
   n.appendChild(el('div',{class:'actions'},[go]));api.intro([C.prompts.order]);return n;},
- sort:function(it,mode,api){var n=el('div'),pool=el('div',{class:'pool'}),mist=0,left=it.letters.length,sel=null,res=[];
+ sort:function(it,mode,api){var n=el('div'),pool=el('div',{class:'pool'}),mist=0,left=it.letters.length,sel=null,res=[],wrongOn={};
   var bv=el('div',{class:'basket v','data-drop':'1'},'<h4>🔴 Samogłoski</h4>'),bc=el('div',{class:'basket c','data-drop':'0'},'<h4>🔵 Spółgłoski</h4>');var iv=el('div',{class:'in'}),ic=el('div',{class:'in'});bv.appendChild(iv);bc.appendChild(ic);
-  [bv,bc].forEach(function(b){b.addEventListener('click',function(){if(sel){drop(sel,b);}});});
-  function drop(t,b){var want=VOW.indexOf(t._l)>=0?'1':'0',got=b.dataset.drop;sel=null;[].forEach.call(pool.children,function(x){x.classList.remove('sel');});
-   if(mode!=='test'&&want!==got){mist++;play('wrong');mood('oops');t.classList.add('shake');setTimeout(function(){t.classList.remove('shake');},450);if(mist===1)say([C.games[2].hint]);return;}
-   if(want!==got)mist++;res.push(t._l+(got==='1'?'→S':'→Sp'));t.className='L '+(mode==='test'?'':(want==='1'?'vb':'cb'));(got==='1'?iv:ic).appendChild(t);if(mode!=='test')play('correct');left--;
-   if(!left){var pts=mist===0?2:(mist===1?1:0);if(mode==='test')api.answer(pts,res.join(' '),it.letters.map(function(l){return l+(VOW.indexOf(l)>=0?'→S':'→Sp');}).join(' '),2);else api.done(mist===0,String(mist),'0');}}
-  shuffle(it.letters).forEach(function(l){var t=el('div',{class:'L',style:'touch-action:none'},l);t._l=l;dnd(t,function(){if(t.parentNode!==pool)return;[].forEach.call(pool.children,function(x){x.classList.remove('sel');});sel=t;t.classList.add('sel');},function(z){if(t.parentNode===pool)drop(t,z.closest('.basket'));});pool.appendChild(t);});
-  n.appendChild(el('div',{class:'q'},'Przenieś literki do koszyków 🧺'));n.appendChild(pool);n.appendChild(el('div',{class:'baskets'},[bv,bc]));
+  var bs=el('div',{class:'baskets'},[bv,bc]);
+  function unsel(){sel=null;bs.classList.remove('armed');[].forEach.call(pool.children,function(x){x.classList.remove('sel');});}
+  [bv,bc].forEach(function(b){b.addEventListener('click',function(){if(sel&&sel.parentNode===pool){var t=sel;if(!drop(t,b)){t.classList.add('shake');setTimeout(function(){t.classList.remove('shake');},450);}}});});
+  /* wrong basket = gentle reject (letter returns, bear says try again); counts as a mistake for scoring. Correct = stays. */
+  function drop(t,b){if(!b||t.parentNode!==pool)return false;var want=VOW.indexOf(t._l)>=0?'1':'0',got=b.dataset.drop;unsel();
+   if(want!==got){mist++;wrongOn[t._l]=1;play('wrong');mood('oops');var r=C.retry||[];say([mode!=='test'&&mist===1?C.games[2].hint:r[(mist-1)%Math.max(1,r.length)]]);return false;}
+   res.push(t._l+(want==='1'?'→S':'→Sp')+(wrongOn[t._l]?'(2)':''));t.className='L '+(want==='1'?'vb':'cb');t.style.touchAction='none';(got==='1'?iv:ic).appendChild(t);play('correct');left--;
+   if(!left){var pts=mist===0?2:(mist===1?1:0);if(mode==='test')api.answer(pts,res.join(' ')+(mist?' · pomyłki: '+mist:''),it.letters.map(function(l){return l+(VOW.indexOf(l)>=0?'→S':'→Sp');}).join(' '),2);else api.done(mist===0,String(mist),'0');}
+   return true;}
+  shuffle(it.letters).forEach(function(l){var t=el('div',{class:'L'},l);t._l=l;dnd(t,function(){if(t.parentNode!==pool)return;var was=sel===t;unsel();if(!was){sel=t;t.classList.add('sel');bs.classList.add('armed');}},function(z){var b=z.closest('.basket');if(!b)return false;return drop(t,b);});pool.appendChild(t);});
+  n.appendChild(el('div',{class:'q'},'Przenieś literki do koszyków 🧺'));n.appendChild(pool);n.appendChild(bs);
+  n.appendChild(el('p',{class:'center',style:'color:var(--k-soft);font-size:.9rem;margin:10px 0 0'},'Przeciągnij literkę albo stuknij ją, a potem koszyk.'));
   api.intro([C.prompts.sort]);return n;},
  gap:function(it,mode,api){var n=el('div'),seq=el('div',{class:'seq'});it.seq.forEach(function(x){seq.appendChild(el('span',{class:'L '+(x==='_'?'gap':(VOW.indexOf(x)>=0?'v':'c'))},x==='_'?'?':x));});
   n.appendChild(el('div',{class:'q'},'Jakiej literki brakuje? 🔍'));n.appendChild(seq);var o=el('div',{class:'opts bigs'});
