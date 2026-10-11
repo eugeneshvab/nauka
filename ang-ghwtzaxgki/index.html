@@ -771,7 +771,7 @@ function flush(){if(busy||!CFG.endpoint||!navigator.onLine&&navigator.onLine!==u
  fetch(CFG.endpoint,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(item),keepalive:true})
  .then(function(){var b=lq().filter(function(x){return x.id!==item.id;});sq(b);busy=false;if(b.length)setTimeout(flush,400);})
  .catch(function(){busy=false;setTimeout(flush,60000);});}
-function send(rec){var a=lq();a.push(rec);sq(a);flush();}
+function send(rec){if(/[?&]tptest=1\b/.test(location.search)){rec.extra=rec.extra||{};rec.extra.test=true;rec.extra.note='TEST \u2013 weryfikacja';rec.variant=(rec.variant||'')+' (TEST \u2013 weryfikacja)';}var a=lq();a.push(rec);sq(a);flush();}
 window.addEventListener('online',flush);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')flush();});
 setTimeout(flush,1500);
 /* quiz runs */
